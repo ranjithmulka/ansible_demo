@@ -1,0 +1,11 @@
+---
+- hosts: localhost
+  become: true
+  connection: local
+  tasks:
+  
+  - name: demo
+    apt:
+      name: ntp
+      state: absent
+  

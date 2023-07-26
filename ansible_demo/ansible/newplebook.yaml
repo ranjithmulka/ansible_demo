@@ -1,0 +1,9 @@
+- hosts: all
+  become: true
+  tasks:
+  - name: installing apache & php packages for  Ubuntu
+    package:
+      name: 
+      - "{{ apache_pakage }}"
+      - "{{ php_pakage }}"
+      state: latest

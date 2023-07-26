@@ -1,0 +1,112 @@
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: install updates (CentOS)
+    tags: always
+    dnf: 
+      update_cache: yes  
+    when: ansible_distribution == "CentOS"
+
+  - name: install updates (Ubuntu)
+    tags: always
+    apt: 
+      update-cache: yes  
+    when: ansible_distribution == "Ubuntu"
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: create user robo
+    tags: always
+    user : 
+      name: robo
+      group: root
+
+- hosts: web_servers
+  become: true
+  tasks:  
+          
+  - name: installing apache2 & php for  Ubuntu seriver
+    tags: apache,apache2,ubuntu
+    apt:
+      name: 
+        - apache2
+        - libapache2-mod-php  
+      state: latest
+    when: ansible_distribution == "Ubuntu"
+
+  - name: installing apache2 & php for CentOS server
+    tags: apache,httpd,centos
+    yum:
+      name: 
+        - httpd
+        - php
+      state: latest
+    when: ansible_distribution == "CentOS"
+
+  - name: start httpd
+    tags: apache,httpd,centos
+    service: 
+      name: httpd 
+      state: started
+      enabled: yes
+    when: ansible_distribution == "CentOS"
+
+  - name: changing mail id /etc/httpd/conf/httpd.conf
+    tags: apache, centos
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^ServerAdmin'
+      line: ServerAdmin mulka@mulka.net
+    when: ansible_distribution == "CentOS"
+    register: httpd
+    
+  - name: restarting httpd
+    tags: apaceh, centos
+    service:
+      name: httpd
+      state: restarted
+    when: httpd.changed
+
+  - name: copying web_pages 
+    tags: apache,httpd,centos
+    copy:
+      src: "{{ item }}"
+      remote_src: false
+      dest: /var/www/html/
+      owner: root
+      group: root
+      mode: 0644
+    with_fileglob:
+      - "apache-files/*"
+
+
+- hosts: work_stations
+  become: true
+  tasks:
+  
+  - name: install unzip
+    package: 
+      name: unzip
+
+  - name: install terraform 
+    unarchive:
+      src: https://releases.hashicorp.com/terraform/1.5.3/terraform_1.5.3_linux_amd64.zip 
+      dest: /usr/local/bin
+      remote_src: yes
+      owner: root
+      group: root
+      mode: 0755
+
+
+- hosts: ntp_servers
+  become: true
+  tasks:
+
+  - name: installing NTP server (CentOS)
+    tags: ntp,centos,ubuntu
+    package:
+      name: ntp
+      state: latest
